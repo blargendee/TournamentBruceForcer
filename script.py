@@ -27,12 +27,7 @@ JAKE_SCORE_COL_INDEX = 7
 MATT_SCORE_COL_INDEX = 9
 
 
-
 def parse(data):
-    freddie_scores = []
-    jake_scores = []
-    matt_scores = []
-
     score_sets = (([], [], []), ([], [], []))
 
     score_list_a = data[SET_A_INDEX_START: SET_A_INDEX_START + SET_LENGTH]
@@ -41,6 +36,7 @@ def parse(data):
    
     for i, score_list in enumerate(scores):
         for row in score_list:
+            song_name = row[SONG_NAME_COL_INDEX]
             f_score = row[FREDDIE_SCORE_COL_INDEX]
             j_score = row[JAKE_SCORE_COL_INDEX]
             m_score = row[MATT_SCORE_COL_INDEX]
@@ -49,9 +45,9 @@ def parse(data):
             j_score = ZERO_POINTS if j_score == BLANK_SCORE else int(j_score)
             m_score = ZERO_POINTS if m_score == BLANK_SCORE else int(m_score)
 
-            score_sets[i][0].append(f_score)
-            score_sets[i][1].append(j_score)
-            score_sets[i][2].append(m_score)
+            score_sets[i][0].append((song_name, f_score))
+            score_sets[i][1].append((song_name, j_score))
+            score_sets[i][2].append((song_name, m_score))
 
     return score_sets
 
@@ -61,11 +57,10 @@ def print_best_combos(scores):
     totals = []
 
     for set_num, score_set in enumerate(scores):
-        LIST_SIZE = 12
         FREDDIE_INDEX = 0
         JAKE_INDEX = 1
         MATT_INDEX = 2
-        list1 = set(range(LIST_SIZE))
+        list1 = set(range(SET_LENGTH))
         combos1 = combinations(list1, 2)
         current_max = 0
         max1_index = None
@@ -73,13 +68,13 @@ def print_best_combos(scores):
         max3_index = None
         
         for f_score1, f_score2 in combos1:
-            list2 = set(range(LIST_SIZE))
+            list2 = set(range(SET_LENGTH))
             list2.remove(f_score1)
             list2.remove(f_score2)
             combos2 = combinations(list2, 2)
         
             for j_score1, j_score2 in combos2:
-                list3 = set(range(LIST_SIZE))
+                list3 = set(range(SET_LENGTH))
                 list3.remove(f_score1)
                 list3.remove(f_score2)
                 list3.remove(j_score1)
@@ -87,20 +82,27 @@ def print_best_combos(scores):
                 combos3 = combinations(list3, 2)
         
                 for m_score1, m_score2 in combos3:
-                    sum1 = score_set[FREDDIE_INDEX][f_score1] + score_set[FREDDIE_INDEX][f_score2]
-                    sum2 = score_set[JAKE_INDEX][j_score1] + score_set[JAKE_INDEX][j_score2]
-                    sum3 = score_set[MATT_INDEX][m_score1] + score_set[MATT_INDEX][m_score2]
-        
+                    sum1 = score_set[FREDDIE_INDEX][f_score1][1] + score_set[FREDDIE_INDEX][f_score2][1]
+                    sum2 = score_set[JAKE_INDEX][j_score1][1] + score_set[JAKE_INDEX][j_score2][1]
+                    sum3 = score_set[MATT_INDEX][m_score1][1] + score_set[MATT_INDEX][m_score2][1]
+
                     total = sum([sum1, sum2, sum3])
                     if total > current_max:
                         current_max = total
                         max1_index = f_score1, f_score2
                         max2_index = j_score1, j_score2
                         max3_index = m_score1, m_score2
+
+        freddie_song1 = (score_set[FREDDIE_INDEX][max1_index[0]][0], score_set[FREDDIE_INDEX][max1_index[0]][1])
+        freddie_song2 = (score_set[FREDDIE_INDEX][max1_index[1]][0], score_set[FREDDIE_INDEX][max1_index[1]][1])
+        jake_song1 = (score_set[JAKE_INDEX][max2_index[0]][0], score_set[JAKE_INDEX][max2_index[0]][1])
+        jake_song2 = (score_set[JAKE_INDEX][max2_index[1]][0], score_set[JAKE_INDEX][max2_index[1]][1])
+        matt_song1 = (score_set[MATT_INDEX][max3_index[0]][0], score_set[MATT_INDEX][max3_index[0]][1])
+        matt_song2 = (score_set[MATT_INDEX][max3_index[1]][0], score_set[MATT_INDEX][max3_index[1]][1])
         
-        print(f"Freddie's Scores: \t{score_set[FREDDIE_INDEX][max1_index[0]]} {score_set[FREDDIE_INDEX][max1_index[1]]}")
-        print(f"Jake's Scores: \t\t{score_set[JAKE_INDEX][max2_index[0]]} {score_set[JAKE_INDEX][max2_index[1]]}")
-        print(f"Matt's Scores: \t\t{score_set[MATT_INDEX][max3_index[0]]} {score_set[MATT_INDEX][max3_index[1]]}")
+        print(f"Freddie's Scores: 1) {freddie_song1[0]} [{freddie_song1[1]}]    2) {freddie_song2[0]} [{freddie_song2[1]}]")
+        print(f"Jake's Scores: 1) {jake_song1[0]} [{jake_song1[1]}]    2) {jake_song2[0]} [{jake_song2[1]}]")
+        print(f"Matt's Scores: 1) {matt_song1[0]} [{matt_song1[1]}]    2) {matt_song2[0]} [{matt_song2[1]}]")
         print(f"Total: \t{current_max}")
         print()
         
