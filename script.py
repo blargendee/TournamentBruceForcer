@@ -35,6 +35,10 @@ def parse(data):
 
     score_sets = (([], [], []), ([], [], []))
 
+    myDict = dict()
+
+    
+
     score_list_a = data[SET_A_INDEX_START: SET_A_INDEX_START + SET_LENGTH]
     score_list_b = data[SET_B_INDEX_START: SET_B_INDEX_START + SET_LENGTH]
     scores = [score_list_a, score_list_b]
