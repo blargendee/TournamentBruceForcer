@@ -12,105 +12,110 @@ from googleapiclient.errors import HttpError
 SCOPES = ['https://www.googleapis.com/auth/spreadsheets.readonly']
 
 # The ID and range of a sample spreadsheet.
-SPREADSHEET_ID = '1MJeaTsofQxSE0JseeyL-SxYUeW9LFCaIKyidZfYeq4M'
-RANGE_NAME = 'Sheet1!DataTable'
+SPREADSHEET_ID = '1CLjLuUOYOmuGPJyDzG_k5AthZQsgiyP1NW3F_rOPGz8'
+RANGE_NAME = 'Scores!Data'
 
-ZERO_POINTS = 0
+JOBS = 'AMEX', 'PAYPAL'
 BLANK_SCORE = ''
-SET_A_INDEX_START = 1
-SET_B_INDEX_START = 14
-SET_LENGTH = 12
-SONG_LEVEL_COL_INDEX = 1
-SONG_NAME_COL_INDEX = 2
-FREDDIE_SCORE_COL_INDEX = 5
-JAKE_SCORE_COL_INDEX = 7
-MATT_SCORE_COL_INDEX = 9
+ZERO_POINTS = 0
 
 
 def parse(data):
-    score_sets = (([], [], []), ([], [], []))
+    score_sets = dict()
 
-    score_list_a = data[SET_A_INDEX_START: SET_A_INDEX_START + SET_LENGTH]
-    score_list_b = data[SET_B_INDEX_START: SET_B_INDEX_START + SET_LENGTH]
-    scores = [score_list_a, score_list_b]
-   
-    for i, score_list in enumerate(scores):
-        for row in score_list:
-            song_name = row[SONG_NAME_COL_INDEX]
-            f_score = row[FREDDIE_SCORE_COL_INDEX]
-            j_score = row[JAKE_SCORE_COL_INDEX]
-            m_score = row[MATT_SCORE_COL_INDEX]
+    it = iter(data)
+    column_names = next(it)
+    for entry in it:
+        new_dict = dict()
+        key = entry[0]
+        for i, label in enumerate(column_names):
+            new_dict[label] = entry[i]
 
-            f_score = ZERO_POINTS if f_score == BLANK_SCORE else int(f_score)
-            j_score = ZERO_POINTS if j_score == BLANK_SCORE else int(j_score)
-            m_score = ZERO_POINTS if m_score == BLANK_SCORE else int(m_score)
+        score_sets[key] = new_dict
 
-            score_sets[i][0].append((song_name, f_score))
-            score_sets[i][1].append((song_name, j_score))
-            score_sets[i][2].append((song_name, m_score))
+    for value in score_sets.values():
+        value['Freddie'] = ZERO_POINTS if value['Freddie'] == BLANK_SCORE else int(value['Freddie'])
+        value['Jake'] = ZERO_POINTS if value['Jake'] == BLANK_SCORE else int(value['Jake'])
+        value['Matt'] = ZERO_POINTS if value['Matt'] == BLANK_SCORE else int(value['Matt'])
 
     return score_sets
 
 
-def print_best_combos(scores):
-    print()
+def get_best_combos(splits):
     totals = []
 
-    for set_num, score_set in enumerate(scores):
-        FREDDIE_INDEX = 0
-        JAKE_INDEX = 1
-        MATT_INDEX = 2
-        list1 = set(range(SET_LENGTH))
-        combos1 = combinations(list1, 2)
-        current_max = 0
-        max1_index = None
-        max2_index = None
-        max3_index = None
-        
-        for f_score1, f_score2 in combos1:
-            list2 = set(range(SET_LENGTH))
-            list2.remove(f_score1)
-            list2.remove(f_score2)
-            combos2 = combinations(list2, 2)
-        
-            for j_score1, j_score2 in combos2:
-                list3 = set(range(SET_LENGTH))
-                list3.remove(f_score1)
-                list3.remove(f_score2)
-                list3.remove(j_score1)
-                list3.remove(j_score2)
-                combos3 = combinations(list3, 2)
-        
-                for m_score1, m_score2 in combos3:
-                    sum1 = score_set[FREDDIE_INDEX][f_score1][1] + score_set[FREDDIE_INDEX][f_score2][1]
-                    sum2 = score_set[JAKE_INDEX][j_score1][1] + score_set[JAKE_INDEX][j_score2][1]
-                    sum3 = score_set[MATT_INDEX][m_score1][1] + score_set[MATT_INDEX][m_score2][1]
+    for song_map in splits:
+        maximum = 0
+        max_entries = None
+        song_pool = set(song_map)
 
-                    total = sum([sum1, sum2, sum3])
-                    if total > current_max:
-                        current_max = total
-                        max1_index = f_score1, f_score2
-                        max2_index = j_score1, j_score2
-                        max3_index = m_score1, m_score2
+        freddie_combos = combinations(song_pool, 2)
+        for a, b in freddie_combos:
+            song_pool.remove(a)
+            song_pool.remove(b)
+            jake_combos = combinations(song_pool, 2)
+            for c, d in jake_combos:
+                song_pool.remove(c)
+                song_pool.remove(d)
+                matt_combos = combinations(song_pool, 2)
+                for e, f in matt_combos:
+                    cumulative_scores = []
+                    cumulative_scores.append(song_map[a]['Freddie'])
+                    cumulative_scores.append(song_map[b]['Freddie'])
+                    cumulative_scores.append(song_map[c]['Jake'])
+                    cumulative_scores.append(song_map[d]['Jake'])
+                    cumulative_scores.append(song_map[e]['Matt'])
+                    cumulative_scores.append(song_map[f]['Matt'])
 
-        freddie_song1 = (score_set[FREDDIE_INDEX][max1_index[0]][0], score_set[FREDDIE_INDEX][max1_index[0]][1])
-        freddie_song2 = (score_set[FREDDIE_INDEX][max1_index[1]][0], score_set[FREDDIE_INDEX][max1_index[1]][1])
-        jake_song1 = (score_set[JAKE_INDEX][max2_index[0]][0], score_set[JAKE_INDEX][max2_index[0]][1])
-        jake_song2 = (score_set[JAKE_INDEX][max2_index[1]][0], score_set[JAKE_INDEX][max2_index[1]][1])
-        matt_song1 = (score_set[MATT_INDEX][max3_index[0]][0], score_set[MATT_INDEX][max3_index[0]][1])
-        matt_song2 = (score_set[MATT_INDEX][max3_index[1]][0], score_set[MATT_INDEX][max3_index[1]][1])
-        
-        print(f"Freddie's Scores: 1) {freddie_song1[0]} [{freddie_song1[1]}]    2) {freddie_song2[0]} [{freddie_song2[1]}]")
-        print(f"Jake's Scores: 1) {jake_song1[0]} [{jake_song1[1]}]    2) {jake_song2[0]} [{jake_song2[1]}]")
-        print(f"Matt's Scores: 1) {matt_song1[0]} [{matt_song1[1]}]    2) {matt_song2[0]} [{matt_song2[1]}]")
-        print(f"Total: \t{current_max}")
+                    total = sum(cumulative_scores)
+                    if total > maximum:
+                        maximum = total
+                        max_entries = dict(zip(['a', 'b', 'c', 'd', 'e', 'f'], [a, b, c, d, e, f]))
+
+                song_pool.update((c, d))
+
+            song_pool.update((a, b))
+
         print()
-        
-        totals.append(current_max)
+        song_a = max_entries['a']
+        song_a_score = song_map[song_a]['Freddie']
+        song_b = max_entries['b']
+        song_b_score = song_map[song_b]['Freddie']
+        song_c = max_entries['c']
+        song_c_score = song_map[song_c]['Jake']
+        song_d = max_entries['d']
+        song_d_score = song_map[song_d]['Jake']
+        song_e = max_entries['e']
+        song_e_score = song_map[song_e]['Matt']
+        song_f = max_entries['f']
+        song_f_score = song_map[song_f]['Matt']
+        subtotal = sum([song_a_score, song_b_score, song_c_score, song_d_score, song_e_score, song_f_score])
+        totals.append(subtotal)
+
+        print(f"Freddie's Songs: {song_a} [{song_a_score}] | {song_b} [{song_b_score}]")
+        print(f"Jake's Songs: {song_c} [{song_c_score}] | {song_d} [{song_d_score}]")
+        print(f"Matt's Songs: {song_e} [{song_e_score}] | {song_f} [{song_f_score}]")
+        print(f"Subtotal: {subtotal}")
 
     print()
     print(f"Grand Total: {sum(totals)}")
 
+
+def split_scores(scores):
+    set_a = dict()
+    set_b = dict()
+
+    print(scores)
+
+    for song_name, fields in scores.items():
+        song_set = fields['Set']
+        if song_set == 'A':
+            set_a[song_name] = fields
+        else:
+            set_b[song_name] = fields
+
+    return (set_a, set_b)
+            
 
 def get_data():
     """Shows basic usage of the Sheets API.
@@ -158,4 +163,5 @@ def get_data():
 if __name__ == '__main__':
     data = get_data()
     scores = parse(data)
-    print_best_combos(scores)
+    splits = split_scores(scores)
+    get_best_combos(splits)
